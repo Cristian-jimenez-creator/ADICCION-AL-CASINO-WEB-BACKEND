@@ -22,7 +22,9 @@ public class ContentCatalog {
     public List<PuzzleContent> puzzles() {
         return readLines("puzzles.tsv").stream().map(line -> {
             String[] fields = line.split("\\t", -1);
-            if (fields.length != 6) throw new IllegalStateException("Fila inválida en puzzles.tsv.");
+            if (fields.length != 6 || fields[0].isBlank() || fields[1].isBlank() || fields[2].isBlank()) {
+                throw new IllegalStateException("Fila inválida en puzzles.tsv: faltan id, título o URL de imagen.");
+            }
             List<String> target = Arrays.stream(fields[5].split(","))
                     .map(String::trim).filter(value -> !value.isEmpty()).toList();
             int rows = Integer.parseInt(fields[3]);

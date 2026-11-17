@@ -29,6 +29,7 @@ public class ChallengeService {
                                 MatchStatus status, Instant createdAt, Instant startedAt, Instant finishedAt,
                                 String winnerId, String coinFirstChoice, String coinResult, String coinWinnerId,
                                 String puzzleTitle, String puzzleImageUrl, int puzzleRows, int puzzleColumns,
+                                Map<String, Integer> puzzlePieceSourceIndices,
                                 List<String> myPuzzleBoard, List<String> opponentPuzzleBoard,
                                 String wordPrompt, int wordRound, Instant wordDeadline) {}
 
@@ -245,6 +246,9 @@ public class ChallengeService {
             puzzle = content.puzzles().stream().filter(value -> value.id().equals(challenge.puzzleContentId())).findFirst().orElse(null);
         }
         Map<String, List<String>> boards = challenge.puzzleBoards() == null ? Map.of() : challenge.puzzleBoards();
+        Map<String, Integer> sourceIndices = new HashMap<>();
+        List<String> targetPieces = challenge.puzzleTarget() == null ? List.of() : challenge.puzzleTarget();
+        for (int index = 0; index < targetPieces.size(); index++) sourceIndices.put(targetPieces.get(index), index);
         String otherId = challenge.creatorId().equals(viewerId) ? challenge.opponentId() : challenge.creatorId();
         return new ChallengeView(challenge.id(), challenge.gameType(), challenge.stake(), challenge.creatorId(),
                 creator == null ? "Jugador" : creator.name(), challenge.opponentId(),
@@ -252,7 +256,7 @@ public class ChallengeService {
                 challenge.startedAt(), challenge.finishedAt(), challenge.winnerId(), challenge.coinFirstChoice(),
                 challenge.coinResult(), challenge.coinWinnerId(), puzzle == null ? null : puzzle.title(),
                 puzzle == null ? null : puzzle.imageUrl(), challenge.puzzleRows(), challenge.puzzleColumns(),
-                boards.get(viewerId), otherId == null ? null : boards.get(otherId),
+                Map.copyOf(sourceIndices), boards.get(viewerId), otherId == null ? null : boards.get(otherId),
                 challenge.wordPrompt(), challenge.wordRound(), challenge.wordDeadline());
     }
 

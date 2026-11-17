@@ -21,6 +21,8 @@ Requisitos: Node.js, Java 25 y Docker con Docker Compose.
    docker compose up -d
    ```
 
+   Espera a que el servicio `mongo-init` termine correctamente; configura el replica set con el nombre `localhost:27017` para que el backend local pueda conectarse.
+
 2. Inicia el backend en una terminal:
 
    ```powershell

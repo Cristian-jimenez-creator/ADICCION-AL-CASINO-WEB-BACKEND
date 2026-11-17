@@ -1,0 +1,115 @@
+{
+  "info": {
+    "name": "Simulador con créditos ficticios",
+    "description": "Rutas REST del proyecto. Define apiUrl y token después de iniciar sesión.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "apiUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "challengeId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Cuenta y catálogo",
+      "item": [
+        {
+          "name": "Registrar jugador",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Nombre\",\n  \"email\": \"usuario@gmail.com\",\n  \"password\": \"cambiar-esta-clave\",\n  \"howKnown\": \"Cómo conociste el juego\"\n}" },
+            "url": "{{apiUrl}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Iniciar sesión",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"usuario@gmail.com\",\n  \"password\": \"cambiar-esta-clave\"\n}" },
+            "url": "{{apiUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Mi cuenta y saldo",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{apiUrl}}/api/auth/me" }
+        },
+        {
+          "name": "Completar descanso tras el video",
+          "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{apiUrl}}/api/auth/rest/complete" }
+        },
+        {
+          "name": "Catálogo de juegos",
+          "request": { "method": "GET", "url": "{{apiUrl}}/api/games" }
+        }
+      ]
+    },
+    {
+      "name": "Retos y partidas",
+      "item": [
+        {
+          "name": "Retos esperando rival",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{apiUrl}}/api/challenges/waiting" }
+        },
+        {
+          "name": "Publicar reto de moneda",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"gameType\": \"COIN\",\n  \"stake\": 300\n}" },
+            "url": "{{apiUrl}}/api/challenges"
+          }
+        },
+        {
+          "name": "Unirse al reto",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"stake\": 300\n}" },
+            "url": "{{apiUrl}}/api/challenges/{{challengeId}}/join"
+          }
+        },
+        {
+          "name": "Elegir cara o sello",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"side\": \"CARA\"\n}" },
+            "url": "{{apiUrl}}/api/challenges/{{challengeId}}/coin"
+          }
+        },
+        {
+          "name": "Consultar partida",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{apiUrl}}/api/challenges/{{challengeId}}" }
+        },
+        {
+          "name": "Abandonar partida (pierde la apuesta)",
+          "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{apiUrl}}/api/challenges/{{challengeId}}/forfeit" }
+        }
+      ]
+    },
+    {
+      "name": "Registro voluntario y administración",
+      "item": [
+        {
+          "name": "Guardar registro de desencadenante",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"situationBefore\": \"\",\n  \"thoughtsOrFeelings\": \"\",\n  \"urgeIntensity\": \"\",\n  \"actionAfter\": \"\",\n  \"helpfulness\": \"\",\n  \"perceivedHelpfulnessOfGame\": \"\"\n}" },
+            "url": "{{apiUrl}}/api/trigger-logs"
+          }
+        },
+        {
+          "name": "Consultar mis registros",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{apiUrl}}/api/trigger-logs" }
+        },
+        {
+          "name": "Consultar reportes (administrador)",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{apiUrl}}/api/admin/reports" }
+        }
+      ]
+    }
+  ]
+}

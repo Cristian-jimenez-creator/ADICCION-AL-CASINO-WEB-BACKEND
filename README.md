@@ -1,90 +1,101 @@
-# SIMULADOR-CON-DINERO-REAL-PARA-ADICTOS-AL-CASINO
-# Problematica
-Un adicto al juego no ha podido dejar los casinos online en años. Todos los métodos conocidos han fallado. Dispuesto a pagar entre 15 y 30 dólares al mes.
+# Simulador de juegos con créditos ficticios
 
-# Descripcion del problema
-No he podido liberarme de la adicción a los casinos online durante varios años. Empezó con unos pocos pesos colombianos, y ahora se está comiendo miles. He probado bloqueadores, auto-restricciones, he ido a un psicólogo, incluso he intentado unirme a Jugadores Anónimos. Pero cada vez, sigo recayendo, pierdo dinero y me odio a mí mismo. Creo que todo se reduce al denso bucle de dopamina que hay en todos los casinos online: mi cerebro se ha enganchado mucho y ahora anhela cada vez más.
+Aplicación web para partidas entre jugadores usando créditos ficticios. No se manejan ni representan apuestas con dinero real. Las reglas funcionales implementadas se basan en [las historias de usuario](docs/historias-de-usuario.md).
 
-Me cuesta escribir sobre esto, pero guardar silencio es aún más complicado. Gente que conozco está en el mismo pozo. Ojalá hubiera una solución eficaz que estuviera ahí para mí en el momento de la recaída. He pensado mucho en esto y se me han ocurrido algunas ideas de producto — aunque no estoy muy seguro de que funcionen — pero estoy listo para probar cualquier cosa en mí mismo y ver qué pasa. Aquí tienes la solucion:
+## Tecnologías
 
-# Solucion
-Una pagina wed que imita un casino online pero con apuestas diminutas en pesos colombianos y algoritmos que reducen la dopamina: pausas obligatorias, limite de tiempo diario
+- Frontend: React 19.3 con JavaScript y Vite 7.3.8.
+- Backend: Java 25 y Spring Boot 4.1.2; API REST.
+- Datos: MongoDB.
+- Voz: WebRTC con señalización REST.
+- Pruebas backend: JUnit 5 mediante Maven Wrapper.
+- Diagramas del curso: Visual Paradigm.
 
-Un Simulador con dinero real para adictos aL casino
+## Inicio local
 
-# Requerimientos Funcionales
-1. Registrar usuario
-2. 
+Requisitos: Node.js, Java 25 y Docker con Docker Compose.
 
+1. Inicia MongoDB como réplica local, necesaria para las transacciones que protegen el saldo:
 
+   ```powershell
+   docker compose up -d
+   ```
 
+2. Inicia el backend en una terminal:
 
+   ```powershell
+   cd backend
+   .\mvnw.cmd spring-boot:run
+   ```
 
+3. En otra terminal, inicia la web:
 
-# la idea fue sacada de esta pagina
-https://problemhunt.pro/en/psychology/dopyur7701-a-gambling-addict-hasnt-been-able-to-qui  
-Como se ve esta idea no contiene codigo y solo tiene como diferentes formas de solucion. Yo elegi con la que se puede genrer una mejor solucion
+   ```powershell
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
+4. Abre la dirección local que muestra Vite. El backend usa `http://localhost:8080` y MongoDB local por defecto. Consulta [.env.example](.env.example) para cambiar los valores.
 
+Para ejecutar las verificaciones disponibles:
 
+```powershell
+cd frontend
+npm run lint
+npm run build
+cd ../backend
+.\mvnw.cmd test
+```
 
-# Resursos o datos dados por el profesor
-# Proyecto final – Diseño de Software
+## Cuentas
 
-## 1. Tecnologías
+- El registro de jugadores solicita nombre, Gmail, contraseña y cómo conoció el juego. Cada cuenta nueva recibe 10.000 créditos ficticios.
+- El jugador vuelve a entrar con Gmail y contraseña.
+- Una cuenta administrativa se crea al configurar `APP_ADMIN_EMAIL` y `APP_ADMIN_PASSWORD` en el entorno del backend. La contraseña administrativa debe tener al menos 12 caracteres. No hay registro público de administradores.
+- Desde el segundo periodo de 24 horas se agregan 4.000 créditos ficticios por periodo.
 
-- Backend: Java con Spring.
-- Base de datos: MongoDB.
-- Administración: MongoDB Compass.
-- Frontend: por definir.
-- API REST.
-- Pruebas: Postman.
-- Despliegue: Vercel.
-- Diagramas: Visual Paradigm (obligatorio).
+## Partidas
 
-## 2. Desarrollo
+- Los juegos son moneda y probabilidad, carrera de rompecabezas y palabra/acertijo.
+- Las apuestas permitidas son 300, 800 y 2.000 créditos. La persona que se une iguala la apuesta publicada.
+- El saldo se descuenta al iniciar la partida; el ganador recibe las dos apuestas.
+- Cada partida de palabra/acertijo tiene un reto de 35 segundos; si nadie acierta, el backend entrega el siguiente.
+- El máximo diario es 90 minutos de partidas activas por cada periodo de 24 horas. Alcanzar el límite bloquea nuevas partidas y deja terminar una ya empezada.
+- Al terminar una partida se presenta el espacio del video y el descanso de cinco minutos. Completar el video elimina el tiempo restante de descanso.
 
-- Crear el backend y la API REST.
-- Conectar MongoDB con Spring.
-- Desarrollar el frontend.
-- Realizar solicitudes y pruebas con Postman.
-- Implementar un agente que revise los conectores y detecte requisitos faltantes.
-- Desplegar el proyecto en la nube.
+## Contenido que debe proporcionarse
 
-## 3. Entregables: 6 diagramas
+Los juegos de rompecabezas y palabras aparecen como no disponibles hasta que se carguen sus contenidos. El formato se explica en [game-content/README.md](game-content/README.md). No se incluyeron acertijos, respuestas ni imágenes inventadas.
 
-Según la plantilla de presentación:
+La URL del video aún está pendiente. `VITE_INFORMATIVE_VIDEO_URL` debe apuntar a un archivo de video que el navegador pueda reproducir para que el evento de finalización cancele la pausa.
 
-1. Vista de contexto.
-2. Vista funcional.
-3. Vista lógica.
-4. Vista de desarrollo.
-5. Vista de despliegue.
-6. Sexto diagrama: pendiente de identificar, pues la plantilla muestra cinco vistas y una diapositiva final de agradecimiento.
+Para probar voz entre redes se necesita configurar `VITE_WEBRTC_ICE_SERVERS` con los servidores ICE/STUN/TURN elegidos. Está vacío por defecto; el proyecto no selecciona un proveedor externo.
 
-Todos deben realizarse en Visual Paradigm y mantener coherencia entre sí.
+## API
 
-## 4. Diagrama de despliegue
+Las rutas se describen en la colección [Postman](postman/simulador-api.postman_collection.json). Todas requieren `Authorization: Bearer <token>` excepto registro, inicio de sesión y catálogo de juegos.
 
-Debe mostrar:
+| Área | Rutas principales |
+|---|---|
+| Cuenta | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/rest/complete` |
+| Catálogo | `GET /api/games` |
+| Retos | `GET /api/challenges/waiting`, `POST /api/challenges`, `POST /api/challenges/{id}/join`, `GET /api/challenges/{id}` |
+| Partida | `POST /api/challenges/{id}/coin`, `PUT /api/challenges/{id}/puzzle`, `POST /api/challenges/{id}/word-answer`, `POST /api/challenges/{id}/forfeit` |
+| Interacción | `/api/challenges/{id}/messages`, `/reports`, `/voice-signals`; `POST /api/players/block` |
+| Registro voluntario | `POST /api/trigger-logs`, `GET /api/trigger-logs` |
+| Administración | `GET /api/admin/reports` |
 
-- Ubicación del frontend, backend y base de datos.
-- Conexiones y protocolos (HTTP/HTTPS y TLS, según corresponda).
-- Nodos, artefactos y entornos de ejecución.
+## Despliegue
 
-Debajo del diagrama, incluir una nota con:
+La carpeta `frontend` está configurada como proyecto Vercel estático (`vercel.json`). El backend incluye un `Dockerfile` para desplegarlo como servicio de contenedor; se deben configurar las variables de entorno, MongoDB en modo replica set y `VITE_API_URL` / CORS con las direcciones reales. El despliegue no se ha ejecutado desde este repositorio.
 
-- Tipo de servicio (PaaS u otro).
-- RAM y procesador.
-- Almacenamiento y ancho de banda.
-- Características de la máquina virtual, si corresponde.
-- Límites del plan gratuito de Vercel.
+## Límites pendientes
 
-## 5. Otros requisitos
+- Banco y formato definitivo de rompecabezas/acertijos.
+- URL compatible del video informativo.
+- Configuración ICE/STUN/TURN de voz.
+- Desconexión: salir de la partida y cerrar la pestaña intentan registrar la derrota. Una pérdida de red sin evento de cierre no puede detectarse automáticamente hasta definir un intervalo de desconexión.
+- Proveedor y valores del entorno de despliegue.
 
-- Elaborar historias de usuario.
-- Utilizar HTTP para la comunicación.
-- Verificar las conexiones entre los componentes.
-- Mantener coherencia entre los seis diagramas.
-
-Nota: El PDF enviado anteriormente es material de apoyo sobre diagramas de despliegue, no el enunciado completo del proyecto final. La nueva plantilla identifica cinco vistas, pero no especifica seis diagramas.
+Consulta [el plan de implementación](docs/plan-implementacion.md) para la trazabilidad y decisiones técnicas.

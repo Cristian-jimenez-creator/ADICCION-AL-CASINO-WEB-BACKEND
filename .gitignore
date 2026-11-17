@@ -1,0 +1,12 @@
+node_modules/
+dist/
+target/
+.env
+.env.*
+!.env.example
+backend/.maven-user/
+backend/.maven-repository/
+backend/.mvn-cache/
+.idea/
+.vscode/
+*.log

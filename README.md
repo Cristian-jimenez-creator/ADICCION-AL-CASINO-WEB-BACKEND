@@ -60,7 +60,6 @@ Según la plantilla de presentación:
 3. Vista lógica.
 4. Vista de desarrollo.
 5. Vista de despliegue.
-6. Sexto diagrama: pendiente de identificar, pues la plantilla muestra cinco vistas y una diapositiva final de agradecimiento.
 
 Todos deben realizarse en Visual Paradigm y mantener coherencia entre sí.
 

@@ -3,7 +3,8 @@ dist/
 target/
 .env
 .env.*
-!.env.example
+!backend/.env.example
+!frontend/.env.example
 backend/.maven-user/
 backend/.maven-repository/
 backend/.mvn-cache/

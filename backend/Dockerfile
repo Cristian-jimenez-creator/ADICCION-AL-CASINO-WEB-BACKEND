@@ -5,6 +5,7 @@ COPY .mvn .mvn
 COPY mvnw .
 RUN chmod +x mvnw && ./mvnw -B dependency:go-offline
 COPY src src
+COPY game-content game-content
 RUN ./mvnw -B -DskipTests package
 
 FROM eclipse-temurin:25-jre

@@ -1,0 +1,6 @@
+.git
+.maven-user
+.maven-repository
+.mvn-cache
+target
+*.log

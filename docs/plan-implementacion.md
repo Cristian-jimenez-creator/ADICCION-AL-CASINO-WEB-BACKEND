@@ -30,7 +30,7 @@ El comportamiento funcional se basa en las historias confirmadas en [historias-d
 
 ## Datos y servicios pendientes
 
-- La persona solicitante entregará el banco de rompecabezas/acertijos y la URL del video. El formato de datos aceptado está en [game-content/README.md](../game-content/README.md). No se han creado preguntas, respuestas ni imágenes de ejemplo.
+- La persona solicitante entregará el banco de rompecabezas/acertijos y la URL del video. El formato de datos aceptado está en [backend/game-content/README.md](../backend/game-content/README.md). No se han creado preguntas, respuestas ni imágenes de ejemplo.
 - `VITE_INFORMATIVE_VIDEO_URL` requiere una URL de archivo reproducible por el elemento HTML `<video>` para que el evento `ended` cancele el descanso.
 - La voz requiere valores `VITE_WEBRTC_ICE_SERVERS` apropiados para conectar jugadores a través de distintas redes. No se eligió proveedor.
 - El registro voluntario queda guardado en MongoDB. Periodo de retención y borrado de estos datos no están definidos.
@@ -40,7 +40,7 @@ El comportamiento funcional se basa en las historias confirmadas en [historias-d
 
 ## Persistencia y saldo
 
-El inicio de partida y la liquidación del saldo usan transacciones MongoDB. Por eso la base local se inicia como replica set con `docker compose`; el MongoDB desplegado también debe aceptar transacciones. La cuenta se actualiza con el tiempo activo y los ciclos diarios definidos en la historia.
+El inicio de partida y la liquidación del saldo usan transacciones MongoDB. Por eso la base local se inicia como replica set con `docker compose -f database/compose.yaml`; el MongoDB desplegado también debe aceptar transacciones. La cuenta se actualiza con el tiempo activo y los ciclos diarios definidos en la historia.
 
 ## Verificación realizada
 

@@ -18,10 +18,10 @@ Requisitos: Node.js, Java 25 y Docker con Docker Compose.
 1. Inicia MongoDB como réplica local, necesaria para las transacciones que protegen el saldo:
 
    ```powershell
-   docker compose up -d
+   docker compose -f database/compose.yaml up -d
    ```
 
-   Espera a que el servicio `mongo-init` termine correctamente; configura el replica set con el nombre `localhost:27017` para que el backend local pueda conectarse.
+   Espera a que el servicio `mongo-init` termine correctamente; configura el replica set con el nombre `localhost:27017` para que el backend local pueda conectarse. Hay más información en [database/README.md](database/README.md).
 
 2. Inicia el backend en una terminal:
 
@@ -38,7 +38,7 @@ Requisitos: Node.js, Java 25 y Docker con Docker Compose.
    npm run dev
    ```
 
-4. Abre la dirección local que muestra Vite. El backend usa `http://localhost:8080` y MongoDB local por defecto. Consulta [.env.example](.env.example) para cambiar los valores.
+4. Abre la dirección local que muestra Vite. El backend usa `http://localhost:8080` y MongoDB local por defecto. `frontend/.env.example` y `backend/.env.example` contienen las variables de cada aplicación. La configuración de Mongo está en [database/README.md](database/README.md).
 
 Para ejecutar las verificaciones disponibles:
 
@@ -68,7 +68,7 @@ cd ../backend
 
 ## Contenido que debe proporcionarse
 
-Los juegos de rompecabezas y palabras aparecen como no disponibles hasta que se carguen sus contenidos. El formato se explica en [game-content/README.md](game-content/README.md). No se incluyeron acertijos, respuestas ni imágenes inventadas.
+Los juegos de rompecabezas y palabras aparecen como no disponibles hasta que se carguen sus contenidos. El formato se explica en [backend/game-content/README.md](backend/game-content/README.md). No se incluyeron acertijos, respuestas ni imágenes inventadas.
 
 La URL del video aún está pendiente. `VITE_INFORMATIVE_VIDEO_URL` debe apuntar a un archivo de video que el navegador pueda reproducir para que el evento de finalización cancele la pausa.
 
@@ -90,7 +90,7 @@ Las rutas se describen en la colección [Postman](postman/simulador-api.postman_
 
 ## Despliegue
 
-La carpeta `frontend` está configurada como proyecto Vercel estático (`vercel.json`). El backend incluye un `Dockerfile` para desplegarlo como servicio de contenedor; se deben configurar las variables de entorno, MongoDB en modo replica set y `VITE_API_URL` / CORS con las direcciones reales. El despliegue no se ha ejecutado desde este repositorio.
+El frontend, backend y servicio de base de datos están en carpetas separadas. La carpeta `frontend` está configurada como proyecto Vercel estático (`vercel.json`). El backend incluye un `Dockerfile` para desplegarlo como servicio de contenedor; se deben configurar las variables de entorno, MongoDB en modo replica set y `VITE_API_URL` / CORS con las direcciones reales. El despliegue no se ha ejecutado desde este repositorio.
 
 ## Límites pendientes
 

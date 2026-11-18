@@ -1,4 +1,4 @@
-# SIMULADOR-CON-DINERO-REAL-PARA-ADICTOS-AL-CASINO
+# SIMULADOR-PARA-ADICTOS-AL-CASINO
 # Problematica
 Un adicto al juego no ha podido dejar los casinos online en años. Todos los métodos conocidos han fallado. Dispuesto a pagar entre 15 y 30 dólares al mes.
 

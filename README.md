@@ -14,7 +14,7 @@ Un Simulador con dinero real para adictos aL casino
 
 # Requerimientos Funcionales
 1. Registrar usuario
-2. 
+2. feeg
 
 
 

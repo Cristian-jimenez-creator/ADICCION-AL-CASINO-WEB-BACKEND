@@ -1,6 +1,6 @@
 # Contenido de juegos
 
-El catálogo comienza vacío porque el banco inicial de rompecabezas y acertijos lo entregará la persona solicitante. Mientras los archivos estén vacíos o no existan, esos dos juegos aparecen como no disponibles. La moneda y probabilidad no depende de este catálogo.
+El banco inicial incluye dos rompecabezas geométricos con imágenes SVG embebidas y cinco acertijos en español. Se pueden ampliar o reemplazar editando los archivos TSV. La moneda y probabilidad no depende de este catálogo.
 
 ## `puzzles.tsv`
 

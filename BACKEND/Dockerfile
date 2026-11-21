@@ -1,12 +1,10 @@
 FROM maven:3.10.0-eclipse-temurin-25 AS build
 WORKDIR /app
 COPY pom.xml .
-COPY .mvn .mvn
-COPY mvnw .
-RUN chmod +x mvnw && ./mvnw -B dependency:go-offline
+RUN mvn -B dependency:go-offline
 COPY src src
 COPY game-content game-content
-RUN ./mvnw -B -DskipTests package
+RUN mvn -B -DskipTests package
 
 FROM eclipse-temurin:25-jre
 WORKDIR /app

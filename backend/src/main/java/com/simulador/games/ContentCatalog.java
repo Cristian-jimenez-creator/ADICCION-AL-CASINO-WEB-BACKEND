@@ -38,11 +38,13 @@ public class ContentCatalog {
 
     public List<WordContent> wordPrompts() {
         return readLines("word-prompts.tsv").stream().map(line -> {
-            String[] fields = line.split("\\t", 3);
-            if (fields.length != 3 || fields[2].isBlank()) {
+            String[] fields = line.split("\\t", 4);
+            if (fields.length < 3 || fields[2].isBlank()) {
                 throw new IllegalStateException("Fila inválida en word-prompts.tsv.");
             }
-            return new WordContent(fields[0], fields[1], fields[2]);
+            String hint = fields.length == 4 && !fields[3].isBlank()
+                    ? fields[3] : "La respuesta comienza por «" + fields[2].substring(0, 1).toUpperCase() + "».";
+            return new WordContent(fields[0], fields[1], fields[2], hint);
         }).toList();
     }
 

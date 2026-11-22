@@ -14,7 +14,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Configuration
 public class SecurityConfig {
@@ -40,7 +42,16 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource(
             @Value("${app.cors.allowed-origin:http://localhost:5173}") String allowedOrigin) {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(allowedOrigin));
+        List<String> configuredOrigins = Arrays.stream(allowedOrigin.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
+        List<String> allowedOrigins = Stream.concat(
+                        configuredOrigins.stream(),
+                        Stream.of("https://adiccion-al-casino-web-frontend.vercel.app"))
+                .distinct()
+                .toList();
+        config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         config.setExposedHeaders(List.of("Authorization"));

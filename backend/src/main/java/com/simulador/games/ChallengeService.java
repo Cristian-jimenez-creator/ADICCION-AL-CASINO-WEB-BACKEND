@@ -12,13 +12,15 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class ChallengeService {
-    public static final List<Long> ALLOWED_STAKES = List.of(300L, 800L, 2_000L);
+    public static final List<Long> ALLOWED_STAKES = List.of(100L, 300L, 800L, 2_000L);
     public record CreateChallenge(GameType gameType, long stake) {}
     public record JoinChallenge(long stake) {}
     public record PuzzleSubmission(List<String> pieces) {}
@@ -31,7 +33,8 @@ public class ChallengeService {
                                 String puzzleTitle, String puzzleImageUrl, int puzzleRows, int puzzleColumns,
                                 Map<String, Integer> puzzlePieceSourceIndices,
                                 List<String> myPuzzleBoard, List<String> opponentPuzzleBoard,
-                                String wordPrompt, int wordRound, Instant wordDeadline) {}
+                                String wordPrompt, int wordRound, Instant wordDeadline, int wordLength,
+                                String wordHint) {}
 
     private final ChallengeRepository challenges;
     private final PlayerRepository players;
@@ -59,17 +62,21 @@ public class ChallengeService {
         accounts.requireEligibleToStart(creator);
         if (creator.credits() < request.stake()) throw new IllegalStateException("No tienes suficientes créditos para esa apuesta.");
         validateContentAvailable(request.gameType());
+        Instant now = Instant.now();
+        cancelWaitingOffers(creatorId, null, now);
         Challenge challenge = new Challenge(null, request.gameType(), request.stake(), creatorId,
-                null, MatchStatus.WAITING, Instant.now(), null, null, null, null, null, null,
+                null, MatchStatus.WAITING, now, null, null, null, null, null, null,
                 null, 0, 0, List.of(), Map.of(), null, null, null, null, 0, 0);
         return view(challenges.save(challenge), creatorId);
     }
 
     public List<ChallengeView> waitingChallenges(String viewerId) {
-        return challenges.findByStatusOrderByCreatedAtAsc(MatchStatus.WAITING).stream()
+        Set<String> creatorsSeen = new HashSet<>();
+        return challenges.findByStatusOrderByCreatedAtDesc(MatchStatus.WAITING).stream()
                 .filter(challenge -> !challenge.creatorId().equals(viewerId))
                 .filter(challenge -> !blocks.existsByBlockerIdAndBlockedId(viewerId, challenge.creatorId()))
                 .filter(challenge -> !blocks.existsByBlockerIdAndBlockedId(challenge.creatorId(), viewerId))
+                .filter(challenge -> creatorsSeen.add(challenge.creatorId()))
                 .map(challenge -> view(challenge, viewerId)).toList();
     }
 
@@ -85,6 +92,7 @@ public class ChallengeService {
         }
 
         Instant now = Instant.now();
+        cancelWaitingOffers(challenge.creatorId(), challenge.id(), now);
         PlayerAccount creator = accounts.refreshed(challenge.creatorId(), now);
         PlayerAccount opponent = accounts.refreshed(playerId, now);
         accounts.requireEligibleToStart(creator);
@@ -121,6 +129,12 @@ public class ChallengeService {
         }
         accounts.refreshed(playerId, Instant.now());
         return view(challenge, playerId);
+    }
+
+    private void cancelWaitingOffers(String creatorId, String exceptChallengeId, Instant now) {
+        challenges.findByCreatorIdAndStatusOrderByCreatedAtDesc(creatorId, MatchStatus.WAITING).stream()
+                .filter(challenge -> exceptChallengeId == null || !challenge.id().equals(exceptChallengeId))
+                .forEach(challenge -> challenges.save(challenge.cancel(now)));
     }
 
     @Transactional
@@ -173,6 +187,19 @@ public class ChallengeService {
     }
 
     @Transactional
+    public ChallengeView revealWordHint(String playerId, String challengeId) {
+        Challenge challenge = requireActive(playerId, challengeId, GameType.WORD);
+        if (challenge.wordHint() == null || challenge.wordHint().isBlank()) {
+            WordContent current = content.wordPrompts().stream()
+                    .filter(value -> value.id().equals(challenge.wordContentId()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("No se encontró la pista de esta ronda."));
+            challenge = challenges.save(challenge.withWordHint(current.hint()));
+        }
+        return view(challenge, playerId);
+    }
+
+    @Transactional
     public ChallengeView forfeit(String playerId, String challengeId) {
         Challenge challenge = requireParticipant(playerId, challengeId);
         if (challenge.status() != MatchStatus.ACTIVE) throw new IllegalStateException("La partida no está activa.");
@@ -215,7 +242,7 @@ public class ChallengeService {
 
     private Challenge startWordRound(Challenge challenge, int round, Instant now) {
         WordContent prompt = content.chooseWordPrompt();
-        return challenge.withWordRound(prompt.id(), prompt.prompt(), prompt.answer(), now.plusSeconds(35), round);
+        return challenge.withWordRound(prompt.id(), prompt.prompt(), prompt.answer(), now.plusSeconds(40), round);
     }
 
     private Challenge nextWordRound(Challenge challenge, Instant now) {
@@ -257,7 +284,13 @@ public class ChallengeService {
                 challenge.coinResult(), challenge.coinWinnerId(), puzzle == null ? null : puzzle.title(),
                 puzzle == null ? null : puzzle.imageUrl(), challenge.puzzleRows(), challenge.puzzleColumns(),
                 Map.copyOf(sourceIndices), boards.get(viewerId), otherId == null ? null : boards.get(otherId),
-                challenge.wordPrompt(), challenge.wordRound(), challenge.wordDeadline());
+                challenge.wordPrompt(), challenge.wordRound(), challenge.wordDeadline(), wordLength(challenge.wordAnswer()),
+                challenge.wordHint());
+    }
+
+    private int wordLength(String answer) {
+        if (answer == null) return 0;
+        return (int) answer.codePoints().filter(Character::isLetterOrDigit).count();
     }
 
     private boolean isParticipant(Challenge challenge, String playerId) {
@@ -279,7 +312,7 @@ public class ChallengeService {
     }
 
     private void validateStake(long stake) {
-        if (!ALLOWED_STAKES.contains(stake)) throw new IllegalArgumentException("La apuesta debe ser 300, 800 o 2.000 créditos.");
+        if (!ALLOWED_STAKES.contains(stake)) throw new IllegalArgumentException("La apuesta debe ser 100, 300, 800 o 2.000 créditos.");
     }
 
     private boolean isValidPermutation(List<String> submitted, List<String> target) {

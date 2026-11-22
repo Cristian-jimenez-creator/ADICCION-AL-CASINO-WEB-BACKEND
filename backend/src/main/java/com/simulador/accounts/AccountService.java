@@ -12,6 +12,8 @@ public class AccountService {
     public static final long DAILY_LIMIT_SECONDS = 90 * 60L;
     private static final long CYCLE_SECONDS = 24 * 60 * 60L;
     private static final long DAILY_CREDIT_GRANT = 4_000L;
+    private static final long MAX_PRESENCE_GAP_SECONDS = 15L;
+    public record DailyReward(PlayerAccount player, long creditsAwarded) {}
     private final PlayerRepository players;
 
     public AccountService(PlayerRepository players) {
@@ -28,12 +30,11 @@ public class AccountService {
     public PlayerAccount refresh(PlayerAccount player, Instant now) {
         long elapsedSeconds = Math.max(0, Duration.between(player.cycleStartedAt(), now).getSeconds());
         long cycle = elapsedSeconds / CYCLE_SECONDS;
-        long grantsDue = Math.max(0, cycle - player.lastDailyGrantCycle());
-        long credits = player.credits() + grantsDue * DAILY_CREDIT_GRANT;
         Instant periodStart = player.playPeriodStartedAt();
         long playedSeconds = player.activePlaySeconds();
-        if (cycle > player.lastDailyGrantCycle()) {
-            periodStart = player.cycleStartedAt().plusSeconds(cycle * CYCLE_SECONDS);
+        Instant currentPeriodStart = player.cycleStartedAt().plusSeconds(cycle * CYCLE_SECONDS);
+        if (currentPeriodStart.isAfter(periodStart)) {
+            periodStart = currentPeriodStart;
             playedSeconds = 0;
         }
 
@@ -47,13 +48,39 @@ public class AccountService {
         Instant restUntil = player.restUntil() != null && now.isBefore(player.restUntil())
                 ? player.restUntil() : null;
         return new PlayerAccount(player.id(), player.name(), player.email(), player.passwordHash(),
-                player.howKnown(), player.role(), credits, player.cycleStartedAt(), cycle,
-                periodStart, playedSeconds, checkpoint, player.activeMatchId(), player.createdAt(), restUntil);
+                player.howKnown(), player.role(), player.credits(), player.cycleStartedAt(),
+                player.lastDailyGrantCycle(), periodStart, playedSeconds, checkpoint,
+                player.activeMatchId(), player.createdAt(), restUntil, player.activityCheckpointAt());
     }
 
     @Transactional
-    public PlayerAccount refreshAndSave(PlayerAccount player, Instant now) {
-        return players.save(refresh(player, now));
+    public DailyReward claimDailyRewardOnEntry(String playerId, Instant now) {
+        PlayerAccount stored = players.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("La cuenta del jugador no existe."));
+        PlayerAccount refreshed = refresh(stored, now);
+        long cycle = Math.max(0, Duration.between(stored.cycleStartedAt(), now).getSeconds()) / CYCLE_SECONDS;
+        if (cycle <= stored.lastDailyGrantCycle()) {
+            return new DailyReward(players.save(refreshed), 0);
+        }
+        PlayerAccount rewarded = refreshed.withDailyState(refreshed.credits() + DAILY_CREDIT_GRANT,
+                cycle, refreshed.playPeriodStartedAt(), refreshed.activePlaySeconds());
+        return new DailyReward(players.save(rewarded), DAILY_CREDIT_GRANT);
+    }
+
+    @Transactional
+    public PlayerAccount recordPresence(String playerId, Instant now) {
+        PlayerAccount stored = players.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("La cuenta del jugador no existe."));
+        PlayerAccount refreshed = refresh(stored, now);
+        long activeSeconds = refreshed.activePlaySeconds();
+        Instant checkpoint = stored.activityCheckpointAt();
+        if (stored.activeMatchId() == null && checkpoint != null && now.isAfter(checkpoint)) {
+            Instant from = checkpoint.isAfter(refreshed.playPeriodStartedAt())
+                    ? checkpoint : refreshed.playPeriodStartedAt();
+            long elapsed = Math.max(0, Duration.between(from, now).getSeconds());
+            activeSeconds += Math.min(elapsed, MAX_PRESENCE_GAP_SECONDS);
+        }
+        return players.save(refreshed.withPresence(now, refreshed.playPeriodStartedAt(), activeSeconds));
     }
 
     public Optional<PlayerAccount> findByEmail(String email) {

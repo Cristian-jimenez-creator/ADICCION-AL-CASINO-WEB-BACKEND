@@ -62,6 +62,11 @@ public class ChallengeController {
         return challenges.submitWordAnswer(current.id(), id, new ChallengeService.WordSubmission(body.round(), body.answer()));
     }
 
+    @PostMapping("/{id}/word-hint")
+    public ChallengeService.ChallengeView wordHint(@PathVariable String id) {
+        return challenges.revealWordHint(current.id(), id);
+    }
+
     @PostMapping("/{id}/forfeit")
     public ChallengeService.ChallengeView forfeit(@PathVariable String id) { return challenges.forfeit(current.id(), id); }
 }

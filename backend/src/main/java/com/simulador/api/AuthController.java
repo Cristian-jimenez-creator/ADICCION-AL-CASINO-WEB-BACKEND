@@ -43,6 +43,16 @@ public class AuthController {
         return auth.current(current.id());
     }
 
+    @PostMapping("/activity/pulse")
+    public AuthService.AccountView activityPulse() {
+        return auth.recordActivity(current.id());
+    }
+
+    @PostMapping("/daily-reward/claim")
+    public AuthService.DailyRewardResponse claimDailyReward() {
+        return auth.claimDailyReward(current.id());
+    }
+
     @PostMapping("/rest/complete")
     public AuthService.AccountView completeRest() {
         return auth.completeRest(current.id());

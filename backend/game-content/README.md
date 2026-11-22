@@ -1,6 +1,6 @@
 # Contenido de juegos
 
-El catálogo comienza vacío porque el banco inicial de rompecabezas y acertijos lo entregará la persona solicitante. Mientras los archivos estén vacíos o no existan, esos dos juegos aparecen como no disponibles. La moneda y probabilidad no depende de este catálogo.
+El banco incluye rompecabezas ilustrados de animales y lugares conocidos, además de acertijos en español. Se puede ampliar o reemplazar editando los archivos TSV. La moneda y probabilidad no depende de este catálogo.
 
 ## `puzzles.tsv`
 
@@ -16,4 +16,4 @@ Un reto por línea:
 
 `id<TAB>enunciado<TAB>respuesta`
 
-No se agregan preguntas ni respuestas de ejemplo para evitar inventar contenido del proyecto.
+Las respuestas del banco son palabras en español; el juego usa su longitud para mostrar un espacio por letra.

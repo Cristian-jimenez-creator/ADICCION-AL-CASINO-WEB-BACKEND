@@ -12,7 +12,8 @@ import java.util.Locale;
 public class AuthService {
     public record RegisterRequest(String name, String email, String password, String howKnown) {}
     public record LoginRequest(String email, String password) {}
-    public record AuthResponse(String token, AccountView player) {}
+    public record AuthResponse(String token, AccountView player, long dailyCreditsAwarded) {}
+    public record DailyRewardResponse(AccountView player, long dailyCreditsAwarded) {}
     public record AccountView(String id, String name, String email, long credits,
                               long activePlaySeconds, long remainingPlaySeconds, String role,
                               Instant restUntil) {}
@@ -45,7 +46,7 @@ public class AuthService {
                 passwords.encode(request.password()), required(request.howKnown(), "cómo conoció el juego"),
                 Role.PLAYER, 10_000, now, 0, now, 0, null, null, now, null);
         PlayerAccount saved = players.save(created);
-        return new AuthResponse(tokens.issue(saved), view(saved, now));
+        return new AuthResponse(tokens.issue(saved), view(saved, now), 0);
     }
 
     @Transactional
@@ -54,14 +55,29 @@ public class AuthService {
         PlayerAccount player = players.findByEmailIgnoreCase(email)
                 .filter(value -> passwords.matches(request.password() == null ? "" : request.password(), value.passwordHash()))
                 .orElseThrow(() -> new IllegalArgumentException("Gmail o contraseña incorrectos."));
-        player = accounts.refreshAndSave(player, Instant.now());
-        return new AuthResponse(tokens.issue(player), view(player, Instant.now()));
+        Instant now = Instant.now();
+        AccountService.DailyReward reward = accounts.claimDailyRewardOnEntry(player.id(), now);
+        player = reward.player();
+        return new AuthResponse(tokens.issue(player), view(player, now), reward.creditsAwarded());
     }
 
     @Transactional
     public AccountView current(String playerId) {
         Instant now = Instant.now();
         return view(accounts.refreshed(playerId, now), now);
+    }
+
+    @Transactional
+    public DailyRewardResponse claimDailyReward(String playerId) {
+        Instant now = Instant.now();
+        AccountService.DailyReward reward = accounts.claimDailyRewardOnEntry(playerId, now);
+        return new DailyRewardResponse(view(reward.player(), now), reward.creditsAwarded());
+    }
+
+    @Transactional
+    public AccountView recordActivity(String playerId) {
+        Instant now = Instant.now();
+        return view(accounts.recordPresence(playerId, now), now);
     }
 
     @Transactional

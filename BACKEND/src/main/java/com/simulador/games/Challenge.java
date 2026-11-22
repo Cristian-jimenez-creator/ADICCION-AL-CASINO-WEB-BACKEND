@@ -40,6 +40,13 @@ public record Challenge(
                 null, null, null, null, 0, settlementVersion);
     }
 
+    public Challenge cancel(Instant at) {
+        return new Challenge(id, gameType, stake, creatorId, opponentId, MatchStatus.CANCELLED,
+                createdAt, startedAt, at, winnerId, coinFirstChoice, coinResult, coinWinnerId,
+                puzzleContentId, puzzleRows, puzzleColumns, puzzleTarget, puzzleBoards,
+                wordContentId, wordPrompt, wordAnswer, wordDeadline, wordRound, settlementVersion + 1);
+    }
+
     public Challenge withCoinChoice(String choice) {
         return new Challenge(id, gameType, stake, creatorId, opponentId, status, createdAt, startedAt,
                 finishedAt, winnerId, choice, coinResult, coinWinnerId, puzzleContentId, puzzleRows,
@@ -85,3 +92,4 @@ public record Challenge(
                 deadline, round, settlementVersion);
     }
 }
+

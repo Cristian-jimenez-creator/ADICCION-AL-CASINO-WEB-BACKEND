@@ -12,9 +12,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class ChallengeService {
@@ -59,17 +61,21 @@ public class ChallengeService {
         accounts.requireEligibleToStart(creator);
         if (creator.credits() < request.stake()) throw new IllegalStateException("No tienes suficientes créditos para esa apuesta.");
         validateContentAvailable(request.gameType());
+        Instant now = Instant.now();
+        cancelWaitingOffers(creatorId, null, now);
         Challenge challenge = new Challenge(null, request.gameType(), request.stake(), creatorId,
-                null, MatchStatus.WAITING, Instant.now(), null, null, null, null, null, null,
+                null, MatchStatus.WAITING, now, null, null, null, null, null, null,
                 null, 0, 0, List.of(), Map.of(), null, null, null, null, 0, 0);
         return view(challenges.save(challenge), creatorId);
     }
 
     public List<ChallengeView> waitingChallenges(String viewerId) {
-        return challenges.findByStatusOrderByCreatedAtAsc(MatchStatus.WAITING).stream()
+        Set<String> creatorsSeen = new HashSet<>();
+        return challenges.findByStatusOrderByCreatedAtDesc(MatchStatus.WAITING).stream()
                 .filter(challenge -> !challenge.creatorId().equals(viewerId))
                 .filter(challenge -> !blocks.existsByBlockerIdAndBlockedId(viewerId, challenge.creatorId()))
                 .filter(challenge -> !blocks.existsByBlockerIdAndBlockedId(challenge.creatorId(), viewerId))
+                .filter(challenge -> creatorsSeen.add(challenge.creatorId()))
                 .map(challenge -> view(challenge, viewerId)).toList();
     }
 
@@ -85,6 +91,7 @@ public class ChallengeService {
         }
 
         Instant now = Instant.now();
+        cancelWaitingOffers(challenge.creatorId(), challenge.id(), now);
         PlayerAccount creator = accounts.refreshed(challenge.creatorId(), now);
         PlayerAccount opponent = accounts.refreshed(playerId, now);
         accounts.requireEligibleToStart(creator);
@@ -121,6 +128,12 @@ public class ChallengeService {
         }
         accounts.refreshed(playerId, Instant.now());
         return view(challenge, playerId);
+    }
+
+    private void cancelWaitingOffers(String creatorId, String exceptChallengeId, Instant now) {
+        challenges.findByCreatorIdAndStatusOrderByCreatedAtDesc(creatorId, MatchStatus.WAITING).stream()
+                .filter(challenge -> exceptChallengeId == null || !challenge.id().equals(exceptChallengeId))
+                .forEach(challenge -> challenges.save(challenge.cancel(now)));
     }
 
     @Transactional
@@ -294,3 +307,4 @@ public class ChallengeService {
         return decomposed.replaceAll("[^\\p{L}\\p{N}]", "");
     }
 }
+

@@ -11,14 +11,14 @@ class AccountServiceTest {
     private final AccountService accounts = new AccountService(null);
 
     @Test
-    void grantsFourThousandCreditsAfterFirstTwentyFourHourCycle() {
+    void refreshingWithoutAnEntryDoesNotGrantDailyCredits() {
         Instant start = Instant.parse("2026-01-01T00:00:00Z");
         PlayerAccount player = player(start, 10_000, 0, null, null, 0);
 
         PlayerAccount refreshed = accounts.refresh(player, start.plusSeconds(86_400));
 
-        assertEquals(14_000, refreshed.credits());
-        assertEquals(1, refreshed.lastDailyGrantCycle());
+        assertEquals(10_000, refreshed.credits());
+        assertEquals(0, refreshed.lastDailyGrantCycle());
         assertEquals(start.plusSeconds(86_400), refreshed.playPeriodStartedAt());
     }
 

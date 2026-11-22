@@ -190,8 +190,9 @@ public class ChallengeService {
     public ChallengeView revealWordHint(String playerId, String challengeId) {
         Challenge challenge = requireActive(playerId, challengeId, GameType.WORD);
         if (challenge.wordHint() == null || challenge.wordHint().isBlank()) {
+            String wordContentId = challenge.wordContentId();
             WordContent current = content.wordPrompts().stream()
-                    .filter(value -> value.id().equals(challenge.wordContentId()))
+                    .filter(value -> value.id().equals(wordContentId))
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException("No se encontró la pista de esta ronda."));
             challenge = challenges.save(challenge.withWordHint(current.hint()));

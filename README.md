@@ -36,3 +36,33 @@ No maneja dinero real ni procesa pagos.
 - `BACKEND/README.md`: instrucciones completas de ejecución, configuración y API.
 
 Para ejecutar localmente necesitas Java 25 y MongoDB como replica set. Consulta la [guía completa](BACKEND/README.md) y la [guía de contenido](BACKEND/game-content/README.md).
+
+## Reglas confirmadas en el código
+
+- Una cuenta nueva recibe **10.000 créditos ficticios**. Al reclamar la recompensa después de un nuevo ciclo de 24 horas se agregan **4.000**; los ciclos omitidos no se acumulan.
+- La actividad diaria tiene un máximo de **90 minutos**. El servicio limita el tiempo de actividad fuera de una partida usando pulsos de actividad.
+- Las apuestas disponibles son **100, 300, 800 y 2.000**. Al iniciar un reto, se descuenta la apuesta de ambos jugadores; quien gana recibe el pozo equivalente a dos apuestas.
+- La ronda de palabra tiene **40 segundos**. La pista de la ronda se comparte con ambos jugadores.
+- Al terminar una partida se aplica un descanso de **5 minutos**.
+
+## Rutas de referencia
+
+| Acción | Método y ruta |
+| --- | --- |
+| Crear cuenta / iniciar sesión | POST /api/auth/register / POST /api/auth/login |
+| Consultar sesión / reclamar recompensa | GET /api/auth/me / POST /api/auth/daily-reward/claim |
+| Registrar actividad | POST /api/auth/activity/pulse |
+| Listar retos / publicar reto | GET /api/challenges/waiting / POST /api/challenges |
+| Unirse o consultar reto | POST /api/challenges/{id}/join / GET /api/challenges/{id} |
+| Jugar | POST /api/challenges/{id}/coin, PUT /api/challenges/{id}/puzzle, POST /api/challenges/{id}/word-answer |
+| Enviar pista / abandonar | POST /api/challenges/{id}/word-hint / POST /api/challenges/{id}/forfeit |
+
+Las operaciones de cuenta requieren token Bearer cuando son privadas. Para rutas de interacción adicionales (chat, reportes, bloqueo y voz), revisa los controladores en BACKEND/src/main/java/ y la colección Postman del repositorio.
+
+## Configuración de contenido
+
+Los archivos game-content/puzzles.tsv y game-content/word-prompts.tsv alimentan rompecabezas y palabras. Si falta contenido válido, el backend no puede ofrecer esos minijuegos. La ruta puede cambiarse con APP_GAME_CONTENT_DIR; confirma que esa carpeta se incluya en la imagen y esté disponible desde el directorio de trabajo del contenedor.
+
+## Comprobaciones de despliegue
+
+Si el servicio compila pero falla al iniciar, revisa en este orden: MONGODB_URI (Atlas, no localhost), acceso de red del cluster a Render, APP_JWT_SECRET, origen exacto en APP_CORS_ALLOWED_ORIGIN y disponibilidad de game-content/. No pegues valores secretos en incidencias ni registros compartidos.

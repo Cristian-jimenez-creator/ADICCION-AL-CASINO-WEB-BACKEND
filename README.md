@@ -10,7 +10,7 @@ Me cuesta escribir sobre esto, pero guardar silencio es aún más complicado. Ge
 # Solucion
 Una pagina wed que imita un casino online pero con apuestas diminutas en pesos colombianos y algoritmos que reducen la dopamina: pausas obligatorias, limite de tiempo diario
 
-Un Simulador con dinero real para adictos aL casino
+Un Simulador para adictos aL casino
 
 # Requerimientos Funcionales
 1. Registrar usuario

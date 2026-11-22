@@ -25,6 +25,15 @@ Los créditos son ficticios: el sistema no procesa pagos ni apuestas con dinero 
 - Maven Wrapper para ejecutar y compilar el servicio.
 - Docker para el despliegue como contenedor.
 
+## Archivos principales
+
+- `pom.xml`: versión de Java y dependencias de Spring.
+- `src/main/java/`: controladores REST y lógica de cuentas, seguridad, juegos e interacciones.
+- `src/main/resources/application.properties`: valores predeterminados y lectura de variables de entorno.
+- `.env.example`: nombres de variables de configuración; contiene valores de ejemplo, no credenciales reales.
+- `Dockerfile`: construcción de la imagen del servicio.
+- `game-content/puzzles.tsv` y `game-content/word-prompts.tsv`: contenido de los dos juegos que usan un banco de retos.
+
 ## Ejecutar localmente
 
 Requisitos: Java 25 y una instancia MongoDB configurada como replica set. Las transacciones que mantienen consistentes las apuestas y los saldos requieren esa configuración. Para levantar MongoDB local, sigue el README del [repositorio de base de datos](https://github.com/Cristian-jimenez-creator/ADICCION-AL-CASINO-WEB-BASE-DE-DATOS).
@@ -38,7 +47,7 @@ $env:APP_CORS_ALLOWED_ORIGIN = "http://localhost:5173"
 .\mvnw.cmd spring-boot:run
 ```
 
-El servicio escucha en el puerto `8080` por defecto. Spring Boot no carga automáticamente los archivos `.env`; configura las variables en el entorno o en la plataforma de despliegue.
+El servicio escucha en el puerto `8080` por defecto. `Spring Boot` no carga automáticamente los archivos `.env`; configura las variables en el entorno o en la plataforma de despliegue.
 
 ## Variables de entorno
 
@@ -64,9 +73,9 @@ La colección Postman del proyecto enumera las rutas y ejemplos. Como referencia
 | Área | Rutas principales |
 | --- | --- |
 | Cuenta | `/api/auth/register`, `/api/auth/login`, `/api/auth/me`, `/api/auth/daily-reward/claim` |
-| Juegos y retos | `/api/games`, `/api/challenges/waiting`, `POST /api/challenges`, `/api/challenges/{id}/join`, `GET /api/challenges/{id}` |
-| Acciones de partida | `/api/challenges/{id}/coin`, `/api/challenges/{id}/puzzle`, `/api/challenges/{id}/word-answer`, `/api/challenges/{id}/forfeit` |
-| Mensajes y voz | `/api/challenges/{id}/messages`, `/api/challenges/{id}/voice-signals` |
+| Juegos y retos | `/api/games`, `/api/challenges`, `/api/challenges/{id}` |
+| Acciones de partida | `/api/challenges/{id}/coin`, `/puzzle`, `/word-answer`, `/forfeit` |
+| Mensajes y voz | `/api/challenges/{id}/messages`, `/voice-signals` |
 | Seguridad y reportes | `/api/players/block`, `/api/challenges/{id}/reports`, `/api/admin/reports` |
 
 Las rutas privadas requieren `Authorization: Bearer <token>`. El catálogo de juegos y las operaciones de registro e inicio de sesión son públicas.
@@ -81,3 +90,4 @@ Las rutas privadas requieren `Authorization: Bearer <token>`. El catálogo de ju
 ## Docker y despliegue
 
 El `Dockerfile` de esta carpeta empaqueta el JAR y el directorio de contenido. Render puede construir desde el Dockerfile del repositorio. Configura las variables de entorno indicadas arriba y confirma que el cluster de Atlas permite conexiones desde el servicio. Atlas es el servicio de base de datos: no se despliega ni se sube un volcado de datos desde este repositorio.
+

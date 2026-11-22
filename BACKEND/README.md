@@ -91,3 +91,23 @@ Las rutas privadas requieren `Authorization: Bearer <token>`. El catálogo de ju
 
 El `Dockerfile` de esta carpeta empaqueta el JAR y el directorio de contenido. Render puede construir desde el Dockerfile del repositorio. Configura las variables de entorno indicadas arriba y confirma que el cluster de Atlas permite conexiones desde el servicio. Atlas es el servicio de base de datos: no se despliega ni se sube un volcado de datos desde este repositorio.
 
+## Reglas y validaciones observables
+
+| Regla | Comportamiento implementado |
+| --- | --- |
+| Registro | Nombre obligatorio (máx. 80), correo validado, contraseña de 8 a 120 caracteres y respuesta “cómo conociste el juego” (máx. 300). |
+| Créditos | Saldo inicial de 10.000; recompensa de 4.000 al reclamar tras completar un nuevo ciclo de 24 horas. No se acumula una recompensa por cada ciclo omitido. |
+| Actividad | Máximo de 90 minutos por ciclo de 24 horas; el seguimiento usa pulsos de actividad. |
+| Apuestas y premio | Apuestas de 100, 300, 800 o 2.000; ambos aportan la apuesta al iniciar y el ganador recibe el pozo de dos apuestas. |
+| Ronda de palabra | Límite de 40 segundos y pista compartida entre los jugadores. |
+| Descanso | Cinco minutos después de completar una partida. |
+
+Los valores reflejan las reglas del servicio consultado; no constituyen dinero, pagos ni premios canjeables.
+
+## Rutas adicionales de referencia
+
+- Cuenta: POST /api/auth/activity/pulse y POST /api/auth/rest/complete.
+- Retos: GET /api/challenges/waiting, POST /api/challenges, POST /api/challenges/{id}/join, DELETE /api/challenges/{id} y GET /api/challenges/{id}.
+- Rondas: POST /api/challenges/{id}/coin, PUT /api/challenges/{id}/puzzle, POST /api/challenges/{id}/word-answer, POST /api/challenges/{id}/word-hint y POST /api/challenges/{id}/forfeit.
+
+La lista no sustituye la colección Postman ni los controladores: consulta esos archivos para cuerpos JSON, códigos de respuesta y autorización de cada operación.

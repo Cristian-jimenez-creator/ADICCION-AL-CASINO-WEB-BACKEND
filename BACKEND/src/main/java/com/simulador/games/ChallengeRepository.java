@@ -12,4 +12,3 @@ public interface ChallengeRepository extends MongoRepository<Challenge, String> 
     List<Challenge> findByCreatorIdOrOpponentIdOrderByCreatedAtDesc(String creatorId, String opponentId);
     Optional<Challenge> findByIdAndStatus(String id, MatchStatus status);
 }
-

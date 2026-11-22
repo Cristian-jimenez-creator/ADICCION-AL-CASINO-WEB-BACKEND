@@ -33,7 +33,7 @@ public class ChallengeService {
                                 String puzzleTitle, String puzzleImageUrl, int puzzleRows, int puzzleColumns,
                                 Map<String, Integer> puzzlePieceSourceIndices,
                                 List<String> myPuzzleBoard, List<String> opponentPuzzleBoard,
-                                String wordPrompt, int wordRound, Instant wordDeadline) {}
+                                String wordPrompt, int wordRound, Instant wordDeadline, int wordLength) {}
 
     private final ChallengeRepository challenges;
     private final PlayerRepository players;
@@ -270,7 +270,12 @@ public class ChallengeService {
                 challenge.coinResult(), challenge.coinWinnerId(), puzzle == null ? null : puzzle.title(),
                 puzzle == null ? null : puzzle.imageUrl(), challenge.puzzleRows(), challenge.puzzleColumns(),
                 Map.copyOf(sourceIndices), boards.get(viewerId), otherId == null ? null : boards.get(otherId),
-                challenge.wordPrompt(), challenge.wordRound(), challenge.wordDeadline());
+                challenge.wordPrompt(), challenge.wordRound(), challenge.wordDeadline(), wordLength(challenge.wordAnswer()));
+    }
+
+    private int wordLength(String answer) {
+        if (answer == null) return 0;
+        return (int) answer.codePoints().filter(Character::isLetterOrDigit).count();
     }
 
     private boolean isParticipant(Challenge challenge, String playerId) {
@@ -307,4 +312,3 @@ public class ChallengeService {
         return decomposed.replaceAll("[^\\p{L}\\p{N}]", "");
     }
 }
-

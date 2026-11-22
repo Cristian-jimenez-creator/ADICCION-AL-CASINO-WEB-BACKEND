@@ -92,4 +92,3 @@ public record Challenge(
                 deadline, round, settlementVersion);
     }
 }
-

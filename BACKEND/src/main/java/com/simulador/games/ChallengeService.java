@@ -23,7 +23,9 @@ public class ChallengeService {
     public static final List<Long> ALLOWED_STAKES = List.of(100L, 300L, 800L, 2_000L);
     public record CreateChallenge(GameType gameType, long stake) {}
     public record JoinChallenge(long stake) {}
-    public record PuzzleSubmission(List<String> pieces) {}
+    public record PuzzleSubmission(int round, List<String> pieces) {
+        public PuzzleSubmission(List<String> pieces) { this(1, pieces); }
+    }
     public record WordSubmission(int round, String answer) {}
     public record WordAnswerResult(boolean correct, boolean roundExpired, ChallengeView challenge) {}
     public record ChallengeView(String id, GameType gameType, long stake, String creatorId,
@@ -34,7 +36,8 @@ public class ChallengeService {
                                 Map<String, Integer> puzzlePieceSourceIndices,
                                 List<String> myPuzzleBoard, List<String> opponentPuzzleBoard,
                                 String wordPrompt, int wordRound, Instant wordDeadline, int wordLength,
-                                String wordHint) {}
+                                String wordHint, int roundNumber, int creatorRoundWins,
+                                int opponentRoundWins, String lastRoundWinnerId) {}
 
     private final ChallengeRepository challenges;
     private final PlayerRepository players;
@@ -121,13 +124,13 @@ public class ChallengeService {
                 challenge.settlementVersion() + 1));
     }
 
+    @Transactional
     public ChallengeView myMatch(String playerId, String challengeId) {
         Challenge challenge = requireParticipant(playerId, challengeId);
         if (challenge.status() == MatchStatus.ACTIVE && challenge.gameType() == GameType.WORD
                 && challenge.wordDeadline() != null && !Instant.now().isBefore(challenge.wordDeadline())) {
-            challenge = nextWordRound(challenge, Instant.now());
+            challenge = completeRound(challenge, null, Instant.now());
         }
-        accounts.refreshed(playerId, Instant.now());
         return view(challenge, playerId);
     }
 
@@ -146,21 +149,21 @@ public class ChallengeService {
 
         String result = random.nextBoolean() ? "CARA" : "SELLO";
         String winner = choice.equals(result) ? playerId : otherPlayer(challenge, playerId);
-        challenge = challenge.withCoinChoice(choice).withCoinResult(result, winner);
-        finish(challenge, winner, Instant.now());
+        challenge = challenge.withCoinChoice(choice).withCoinOutcome(result, winner);
+        challenge = completeRound(challenge, winner, Instant.now());
         return view(challenge, playerId);
     }
 
     @Transactional
     public ChallengeView submitPuzzle(String playerId, String challengeId, PuzzleSubmission submission) {
         Challenge challenge = requireActive(playerId, challengeId, GameType.PUZZLE);
+        if (submission.round() != challenge.roundNumber()) return view(challenge, playerId);
         if (submission.pieces() == null || !isValidPermutation(submission.pieces(), challenge.puzzleTarget())) {
             throw new IllegalArgumentException("El tablero enviado no contiene las piezas válidas del rompecabezas.");
         }
         challenge = challenge.withPuzzleBoard(playerId, submission.pieces());
         if (submission.pieces().equals(challenge.puzzleTarget())) {
-            challenge = challenge.finish(playerId, Instant.now());
-            finish(challenge, playerId, Instant.now());
+            challenge = completeRound(challenge, playerId, Instant.now());
         } else {
             challenges.save(challenge);
         }
@@ -172,15 +175,14 @@ public class ChallengeService {
         Challenge challenge = requireActive(playerId, challengeId, GameType.WORD);
         Instant now = Instant.now();
         if (challenge.wordDeadline() == null || !now.isBefore(challenge.wordDeadline())) {
-            challenge = nextWordRound(challenge, now);
+            challenge = completeRound(challenge, null, now);
             return new WordAnswerResult(false, true, view(challenge, playerId));
         }
         if (submission.round() != challenge.wordRound()) {
             return new WordAnswerResult(false, true, view(challenge, playerId));
         }
         if (normalizeAnswer(submission.answer()).equals(normalizeAnswer(challenge.wordAnswer()))) {
-            challenge = challenge.finish(playerId, now);
-            finish(challenge, playerId, now);
+            challenge = completeRound(challenge, playerId, now);
             return new WordAnswerResult(true, false, view(challenge, playerId));
         }
         return new WordAnswerResult(false, false, view(challenge, playerId));
@@ -205,8 +207,12 @@ public class ChallengeService {
         Challenge challenge = requireParticipant(playerId, challengeId);
         if (challenge.status() != MatchStatus.ACTIVE) throw new IllegalStateException("La partida no está activa.");
         String winner = otherPlayer(challenge, playerId);
-        challenge = challenge.finish(winner, Instant.now());
-        finish(challenge, winner, Instant.now());
+        int creatorWins = winner.equals(challenge.creatorId()) ? 2 : challenge.creatorRoundWins();
+        int opponentWins = winner.equals(challenge.opponentId()) ? 2 : challenge.opponentRoundWins();
+        Instant now = Instant.now();
+        challenge = challenge.withRoundScore(challenge.roundNumber(), creatorWins, opponentWins, winner)
+                .finish(winner, now);
+        challenge = settleWinner(challenge, winner, now);
         return view(challenge, playerId);
     }
 
@@ -246,14 +252,26 @@ public class ChallengeService {
         return challenge.withWordRound(prompt.id(), prompt.prompt(), prompt.answer(), now.plusSeconds(40), round);
     }
 
-    private Challenge nextWordRound(Challenge challenge, Instant now) {
-        return challenges.save(startWordRound(challenge, challenge.wordRound() + 1, now));
+    private Challenge completeRound(Challenge challenge, String roundWinnerId, Instant now) {
+        int creatorWins = challenge.creatorRoundWins() + (challenge.creatorId().equals(roundWinnerId) ? 1 : 0);
+        int opponentWins = challenge.opponentRoundWins() + (challenge.opponentId().equals(roundWinnerId) ? 1 : 0);
+        int completedRound = challenge.roundNumber();
+        challenge = challenge.withRoundScore(completedRound, creatorWins, opponentWins, roundWinnerId);
+
+        String winner = creatorWins >= 2 ? challenge.creatorId()
+                : opponentWins >= 2 ? challenge.opponentId()
+                : completedRound >= 3 && creatorWins != opponentWins
+                ? (creatorWins > opponentWins ? challenge.creatorId() : challenge.opponentId()) : null;
+        if (winner != null) return settleWinner(challenge.finish(winner, now), winner, now);
+        if (completedRound >= 3) return settleDraw(challenge.finish(null, now), now);
+
+        Challenge next = challenge.withRoundScore(completedRound + 1, creatorWins, opponentWins, roundWinnerId);
+        if (next.gameType() == GameType.PUZZLE) next = startPuzzle(next);
+        if (next.gameType() == GameType.WORD) next = startWordRound(next, completedRound + 1, now);
+        return challenges.save(next);
     }
 
-    private void finish(Challenge challenge, String winnerId, Instant now) {
-        if (challenge.status() != MatchStatus.FINISHED || challenge.winnerId() == null) {
-            challenge = challenge.finish(winnerId, now);
-        }
+    private Challenge settleWinner(Challenge challenge, String winnerId, Instant now) {
         PlayerAccount creator = accounts.refreshed(challenge.creatorId(), now);
         PlayerAccount opponent = accounts.refreshed(challenge.opponentId(), now);
         PlayerAccount winner = winnerId.equals(creator.id()) ? creator : opponent;
@@ -264,6 +282,19 @@ public class ChallengeService {
         players.save(loser.withActiveMatch(null, null).withRestUntil(now.plusSeconds(5 * 60L)));
         challenges.save(challenge);
         messages.deleteByChallengeId(challenge.id());
+        return challenge;
+    }
+
+    private Challenge settleDraw(Challenge challenge, Instant now) {
+        PlayerAccount creator = accounts.refreshed(challenge.creatorId(), now);
+        PlayerAccount opponent = accounts.refreshed(challenge.opponentId(), now);
+        players.save(creator.withCredits(creator.credits() + challenge.stake()).withActiveMatch(null, null)
+                .withRestUntil(now.plusSeconds(5 * 60L)));
+        players.save(opponent.withCredits(opponent.credits() + challenge.stake()).withActiveMatch(null, null)
+                .withRestUntil(now.plusSeconds(5 * 60L)));
+        challenges.save(challenge);
+        messages.deleteByChallengeId(challenge.id());
+        return challenge;
     }
 
     private ChallengeView view(Challenge challenge, String viewerId) {
@@ -286,7 +317,8 @@ public class ChallengeService {
                 puzzle == null ? null : puzzle.imageUrl(), challenge.puzzleRows(), challenge.puzzleColumns(),
                 Map.copyOf(sourceIndices), boards.get(viewerId), otherId == null ? null : boards.get(otherId),
                 challenge.wordPrompt(), challenge.wordRound(), challenge.wordDeadline(), wordLength(challenge.wordAnswer()),
-                challenge.wordHint());
+                challenge.wordHint(), challenge.roundNumber(), challenge.creatorRoundWins(),
+                challenge.opponentRoundWins(), challenge.lastRoundWinnerId());
     }
 
     private int wordLength(String answer) {

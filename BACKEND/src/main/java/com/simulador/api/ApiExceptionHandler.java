@@ -1,6 +1,8 @@
 package com.simulador.api;
 
+import com.mongodb.MongoException;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -20,6 +22,10 @@ public class ApiExceptionHandler {
     ResponseEntity<Map<String,String>> forbidden(AccessDeniedException ex) { return response(HttpStatus.FORBIDDEN,ex.getMessage()); }
     @ExceptionHandler(DuplicateKeyException.class)
     ResponseEntity<Map<String,String>> duplicate(DuplicateKeyException ex) { return response(HttpStatus.CONFLICT,"Ya existe un registro con esos datos."); }
+    @ExceptionHandler(DataAccessException.class)
+    ResponseEntity<Map<String,String>> database(DataAccessException ex) { return response(HttpStatus.SERVICE_UNAVAILABLE,"La base de datos está ocupada. Espera un momento y vuelve a intentarlo."); }
+    @ExceptionHandler(MongoException.class)
+    ResponseEntity<Map<String,String>> mongo(MongoException ex) { return response(HttpStatus.SERVICE_UNAVAILABLE,"La base de datos está ocupada. Espera un momento y vuelve a intentarlo."); }
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<Map<String,String>> invalid(MethodArgumentNotValidException ex) {
         String message=ex.getBindingResult().getFieldErrors().stream().findFirst().map(e->e.getDefaultMessage()).orElse("Revisa los datos enviados.");

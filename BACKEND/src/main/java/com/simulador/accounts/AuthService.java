@@ -61,10 +61,11 @@ public class AuthService {
         return new AuthResponse(tokens.issue(player), view(player, now), reward.creditsAwarded());
     }
 
-    @Transactional
     public AccountView current(String playerId) {
         Instant now = Instant.now();
-        return view(accounts.refreshed(playerId, now), now);
+        PlayerAccount player = players.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("La cuenta del jugador no existe."));
+        return view(player, now);
     }
 
     @Transactional

@@ -22,20 +22,22 @@ public class AuthController {
     public record LoginBody(@NotBlank @Email String email, @NotBlank String password) {}
     private final AuthService auth;
     private final CurrentPlayer current;
+    private final MongoWriteConflictRetry retry;
 
-    public AuthController(AuthService auth, CurrentPlayer current) {
+    public AuthController(AuthService auth, CurrentPlayer current, MongoWriteConflictRetry retry) {
         this.auth = auth;
         this.current = current;
+        this.retry = retry;
     }
 
     @PostMapping("/register")
     public AuthService.AuthResponse register(@Valid @RequestBody RegisterBody body) {
-        return auth.register(new AuthService.RegisterRequest(body.name(), body.email(), body.password(), body.howKnown()));
+        return retry.execute(() -> auth.register(new AuthService.RegisterRequest(body.name(), body.email(), body.password(), body.howKnown())));
     }
 
     @PostMapping("/login")
     public AuthService.AuthResponse login(@Valid @RequestBody LoginBody body) {
-        return auth.login(new AuthService.LoginRequest(body.email(), body.password()));
+        return retry.execute(() -> auth.login(new AuthService.LoginRequest(body.email(), body.password())));
     }
 
     @GetMapping("/me")
@@ -45,16 +47,16 @@ public class AuthController {
 
     @PostMapping("/activity/pulse")
     public AuthService.AccountView activityPulse() {
-        return auth.recordActivity(current.id());
+        return retry.execute(() -> auth.recordActivity(current.id()));
     }
 
     @PostMapping("/daily-reward/claim")
     public AuthService.DailyRewardResponse claimDailyReward() {
-        return auth.claimDailyReward(current.id());
+        return retry.execute(() -> auth.claimDailyReward(current.id()));
     }
 
     @PostMapping("/rest/complete")
     public AuthService.AccountView completeRest() {
-        return auth.completeRest(current.id());
+        return retry.execute(() -> auth.completeRest(current.id()));
     }
 }

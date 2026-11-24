@@ -84,6 +84,7 @@ public class ChallengeService {
     }
 
     @Transactional
+    // Valida a ambos jugadores, descuenta la apuesta y prepara el minijuego.
     public ChallengeView join(String playerId, String challengeId, JoinChallenge request) {
         Challenge challenge = challenges.findByIdAndStatus(challengeId, MatchStatus.WAITING)
                 .orElseThrow(() -> new IllegalStateException("El reto ya no está disponible."));
@@ -252,6 +253,7 @@ public class ChallengeService {
         return challenge.withWordRound(prompt.id(), prompt.prompt(), prompt.answer(), now.plusSeconds(40), round);
     }
 
+    // Cierra la ronda y comprueba si el reto al mejor de tres ya terminó.
     private Challenge completeRound(Challenge challenge, String roundWinnerId, Instant now) {
         int creatorWins = challenge.creatorRoundWins() + (challenge.creatorId().equals(roundWinnerId) ? 1 : 0);
         int opponentWins = challenge.opponentRoundWins() + (challenge.opponentId().equals(roundWinnerId) ? 1 : 0);
@@ -271,6 +273,7 @@ public class ChallengeService {
         return challenges.save(next);
     }
 
+    // Entrega el pozo al ganador y libera a los jugadores.
     private Challenge settleWinner(Challenge challenge, String winnerId, Instant now) {
         PlayerAccount creator = accounts.refreshed(challenge.creatorId(), now);
         PlayerAccount opponent = accounts.refreshed(challenge.opponentId(), now);

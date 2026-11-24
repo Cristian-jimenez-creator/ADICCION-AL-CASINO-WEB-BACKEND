@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+// Un documento conserva el reto, sus minijuegos y el marcador de rondas.
 @Document("challenges")
 public record Challenge(
         @Id String id,

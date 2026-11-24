@@ -27,6 +27,7 @@ public class AccountService {
         return players.save(refresh(player, now));
     }
 
+    // Actualiza el ciclo diario y el tiempo de actividad acumulado.
     public PlayerAccount refresh(PlayerAccount player, Instant now) {
         long elapsedSeconds = Math.max(0, Duration.between(player.cycleStartedAt(), now).getSeconds());
         long cycle = elapsedSeconds / CYCLE_SECONDS;
@@ -54,6 +55,7 @@ public class AccountService {
     }
 
     @Transactional
+    // Entrega créditos al volver, una vez por cada ciclo de 24 horas.
     public DailyReward claimDailyRewardOnEntry(String playerId, Instant now) {
         PlayerAccount stored = players.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("La cuenta del jugador no existe."));
@@ -68,6 +70,7 @@ public class AccountService {
     }
 
     @Transactional
+    // Acumula la presencia activa y limita los intervalos de inactividad.
     public PlayerAccount recordPresence(String playerId, Instant now) {
         PlayerAccount stored = players.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("La cuenta del jugador no existe."));

@@ -41,6 +41,7 @@ public class InteractionController {
         this.blocks=blocks; this.triggerLogs=triggerLogs; this.signals=signals;
     }
 
+    // El chat queda limitado a participantes de una partida activa.
     @GetMapping("/challenges/{id}/messages")
     public List<MessageView> messages(@PathVariable String id, @RequestParam(required=false) Instant after) {
         var match=challenges.requireParticipant(current.id(), id);
@@ -63,6 +64,7 @@ public class InteractionController {
         return new MessageView(saved.id(),saved.senderId(),saved.body(),saved.createdAt());
     }
 
+    // Guarda el reporte del rival y el canal indicado por el jugador.
     @PostMapping("/challenges/{id}/reports")
     public Map<String,String> report(@PathVariable String id,@Valid @RequestBody ReportBody body) {
         var match=challenges.requireParticipant(current.id(),id);
@@ -105,6 +107,7 @@ public class InteractionController {
                 after==null?Instant.EPOCH:after);
     }
 
+    // Reenvía señales de voz entre los dos participantes de la partida.
     @PostMapping("/challenges/{id}/voice-signals")
     public RtcSignal voiceSignal(@PathVariable String id,@Valid @RequestBody SignalBody body) {
         var match=challenges.requireParticipant(current.id(),id);

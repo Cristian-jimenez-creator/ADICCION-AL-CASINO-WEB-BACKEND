@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
+/** Reporte persistido sobre una interacción de jugador. */
 @Document("player_reports")
 public record PlayerReport(
         @Id String id,

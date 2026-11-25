@@ -9,14 +9,17 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
+/** Obtiene y valida al jugador autenticado actual. */
 @Component
 public class CurrentPlayer {
     private final AccountService accounts;
 
+    /** Inicializa CurrentPlayer con las dependencias necesarias. */
     public CurrentPlayer(AccountService accounts) {
         this.accounts = accounts;
     }
 
+    /** Devuelve la identidad autenticada de la solicitud actual. */
     public AppPrincipal principal() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof AppPrincipal principal)) {
@@ -25,14 +28,17 @@ public class CurrentPlayer {
         return principal;
     }
 
+    /** Realiza la operación pública refresh. */
     public PlayerAccount refresh() {
         return accounts.refreshed(principal().id(), Instant.now());
     }
 
+    /** Devuelve el identificador del jugador autenticado. */
     public String id() {
         return principal().id();
     }
 
+    /** Exige el rol administrativo para continuar. */
     public void requireAdmin() {
         if (!principal().role().name().equals("ADMIN")) throw new AccessDeniedException("Esta vista requiere una cuenta de administrador.");
     }

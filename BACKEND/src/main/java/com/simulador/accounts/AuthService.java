@@ -8,12 +8,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Locale;
 
+/** Implementa el registro, inicio de sesión y perfil del jugador. */
 @Service
 public class AuthService {
+    /** Tipo público RegisterRequest del módulo. */
     public record RegisterRequest(String name, String email, String password, String howKnown) {}
+    /** Tipo público LoginRequest del módulo. */
     public record LoginRequest(String email, String password) {}
+    /** Tipo público AuthResponse del módulo. */
     public record AuthResponse(String token, AccountView player, long dailyCreditsAwarded) {}
+    /** Tipo público DailyRewardResponse del módulo. */
     public record DailyRewardResponse(AccountView player, long dailyCreditsAwarded) {}
+    /** Tipo público AccountView del módulo. */
     public record AccountView(String id, String name, String email, long credits,
                               long activePlaySeconds, long remainingPlaySeconds, String role,
                               Instant restUntil) {}
@@ -23,6 +29,7 @@ public class AuthService {
     private final JwtTokenService tokens;
     private final AccountService accounts;
 
+    /** Inicializa AuthService con las dependencias necesarias. */
     public AuthService(PlayerRepository players, PasswordEncoder passwords, JwtTokenService tokens,
                        AccountService accounts) {
         this.players = players;
@@ -31,6 +38,7 @@ public class AuthService {
         this.accounts = accounts;
     }
 
+    /** Registra una cuenta nueva y prepara su sesión. */
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         String email = normalizeEmail(request.email());
@@ -49,6 +57,7 @@ public class AuthService {
         return new AuthResponse(tokens.issue(saved), view(saved, now), 0);
     }
 
+    /** Valida las credenciales y crea una sesión. */
     @Transactional
     public AuthResponse login(LoginRequest request) {
         String email = normalizeEmail(request.email());
@@ -61,6 +70,7 @@ public class AuthService {
         return new AuthResponse(tokens.issue(player), view(player, now), reward.creditsAwarded());
     }
 
+    /** Devuelve los datos actuales del jugador autenticado. */
     public AccountView current(String playerId) {
         Instant now = Instant.now();
         PlayerAccount player = players.findById(playerId)
@@ -68,6 +78,7 @@ public class AuthService {
         return view(player, now);
     }
 
+    /** Entrega el bono diario si ya corresponde. */
     @Transactional
     public DailyRewardResponse claimDailyReward(String playerId) {
         Instant now = Instant.now();
@@ -75,18 +86,21 @@ public class AuthService {
         return new DailyRewardResponse(view(reward.player(), now), reward.creditsAwarded());
     }
 
+    /** Actualiza el tiempo activo registrado del jugador. */
     @Transactional
     public AccountView recordActivity(String playerId) {
         Instant now = Instant.now();
         return view(accounts.recordPresence(playerId, now), now);
     }
 
+    /** Registra el fin del periodo de descanso. */
     @Transactional
     public AccountView completeRest(String playerId) {
         Instant now = Instant.now();
         return view(accounts.completeRest(playerId, now), now);
     }
 
+    /** Convierte la cuenta persistida al formato de respuesta pública. */
     public static AccountView view(PlayerAccount player, Instant now) {
         long active = player.activePlaySeconds();
         if (player.activeMatchId() != null && player.activeMatchCheckpoint() != null) {
@@ -98,6 +112,7 @@ public class AuthService {
                 Math.max(0, AccountService.DAILY_LIMIT_SECONDS - active), player.role().name(), player.restUntil());
     }
 
+    /** Normaliza el correo para búsquedas consistentes. */
     public static String normalizeEmail(String email) {
         return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
     }

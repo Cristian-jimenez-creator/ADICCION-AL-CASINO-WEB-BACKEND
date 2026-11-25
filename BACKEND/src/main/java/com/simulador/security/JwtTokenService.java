@@ -12,11 +12,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 
+/** Crea y valida tokens JWT de sesión. */
 @Service
 public class JwtTokenService {
     private static final String HEADER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
     private final byte[] secret;
 
+    /** Inicializa JwtTokenService con las dependencias necesarias. */
     public JwtTokenService(@Value("${app.jwt.secret:local-only-change-this-secret-before-deploying-0001}") String secret) {
         if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
             throw new IllegalArgumentException("APP_JWT_SECRET debe tener al menos 32 bytes.");
@@ -24,6 +26,7 @@ public class JwtTokenService {
         this.secret = secret.getBytes(StandardCharsets.UTF_8);
     }
 
+    /** Emite un token de sesión para el jugador. */
     public String issue(PlayerAccount player) {
         long expires = Instant.now().plus(Duration.ofHours(12)).getEpochSecond();
         String body = player.id() + "|" + player.email() + "|" + player.role().name() + "|" + expires;
@@ -33,6 +36,7 @@ public class JwtTokenService {
         return content + "." + Base64.getUrlEncoder().withoutPadding().encodeToString(sign(content));
     }
 
+    /** Valida el token y devuelve su identidad autenticada. */
     public AppPrincipal verify(String token) {
         try {
             String[] parts = token.split("\\.");

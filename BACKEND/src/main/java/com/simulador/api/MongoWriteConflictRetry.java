@@ -6,10 +6,12 @@ import org.springframework.stereotype.Component;
 import java.util.function.Supplier;
 
 /** Retries an entire proxied service call when MongoDB reports a transient write conflict. */
+/** Reintenta operaciones afectadas por conflictos de escritura MongoDB. */
 @Component
 public class MongoWriteConflictRetry {
     private static final int MAX_ATTEMPTS = 5;
 
+    /** Ejecuta una operación con reintentos ante conflictos de escritura. */
     public <T> T execute(Supplier<T> operation) {
         for (int attempt = 1; ; attempt++) {
             try {

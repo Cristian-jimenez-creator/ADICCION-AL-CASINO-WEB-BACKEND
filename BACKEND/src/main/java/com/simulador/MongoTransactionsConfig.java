@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.MongoDatabaseFactory;
 import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
+/** Configura el soporte de transacciones de MongoDB. */
 @Configuration
 public class MongoTransactionsConfig {
     @Bean

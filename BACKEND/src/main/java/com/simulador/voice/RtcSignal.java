@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
+/** Señal de conexión de voz intercambiada entre jugadores. */
 @Document("rtc_signals")
 public record RtcSignal(
         @Id String id,

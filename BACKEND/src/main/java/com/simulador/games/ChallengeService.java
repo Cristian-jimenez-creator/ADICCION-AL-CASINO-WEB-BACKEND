@@ -18,16 +18,24 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+/** Aplica las reglas de retos, rondas y resultados. */
 @Service
 public class ChallengeService {
+    /** Define el valor público ALLOWED_STAKES utilizado por el módulo. */
     public static final List<Long> ALLOWED_STAKES = List.of(100L, 300L, 800L, 2_000L);
+    /** Tipo público CreateChallenge del módulo. */
     public record CreateChallenge(GameType gameType, long stake) {}
+    /** Tipo público JoinChallenge del módulo. */
     public record JoinChallenge(long stake) {}
+    /** Tipo público PuzzleSubmission del módulo. */
     public record PuzzleSubmission(int round, List<String> pieces) {
         public PuzzleSubmission(List<String> pieces) { this(1, pieces); }
     }
+    /** Tipo público WordSubmission del módulo. */
     public record WordSubmission(int round, String answer) {}
+    /** Tipo público WordAnswerResult del módulo. */
     public record WordAnswerResult(boolean correct, boolean roundExpired, ChallengeView challenge) {}
+    /** Tipo público ChallengeView del módulo. */
     public record ChallengeView(String id, GameType gameType, long stake, String creatorId,
                                 String creatorName, String opponentId, String opponentName,
                                 MatchStatus status, Instant createdAt, Instant startedAt, Instant finishedAt,
@@ -47,6 +55,7 @@ public class ChallengeService {
     private final java.security.SecureRandom random = new java.security.SecureRandom();
     private final ChallengeChatRepository messages;
 
+    /** Inicializa ChallengeService con las dependencias necesarias. */
     public ChallengeService(ChallengeRepository challenges, PlayerRepository players,
                             AccountService accounts, ContentCatalog content,
                             PlayerBlockRepository blocks, ChallengeChatRepository messages) {
@@ -58,6 +67,7 @@ public class ChallengeService {
         this.messages = messages;
     }
 
+    /** Crea un reto con el tipo de juego y apuesta solicitados. */
     @Transactional
     public ChallengeView create(String creatorId, CreateChallenge request) {
         validateStake(request.stake());
@@ -73,6 +83,7 @@ public class ChallengeService {
         return view(challenges.save(challenge), creatorId);
     }
 
+    /** Lista los retos pendientes visibles para el jugador. */
     public List<ChallengeView> waitingChallenges(String viewerId) {
         Set<String> creatorsSeen = new HashSet<>();
         return challenges.findByStatusOrderByCreatedAtDesc(MatchStatus.WAITING).stream()
@@ -85,6 +96,7 @@ public class ChallengeService {
 
     @Transactional
     // Valida a ambos jugadores, descuenta la apuesta y prepara el minijuego.
+    /** Une al jugador a un reto disponible. */
     public ChallengeView join(String playerId, String challengeId, JoinChallenge request) {
         Challenge challenge = challenges.findByIdAndStatus(challengeId, MatchStatus.WAITING)
                 .orElseThrow(() -> new IllegalStateException("El reto ya no está disponible."));
@@ -114,6 +126,7 @@ public class ChallengeService {
         return view(challenges.save(active), playerId);
     }
 
+    /** Cancela un reto creado por el jugador. */
     @Transactional
     public void cancel(String playerId, String challengeId) {
         Challenge challenge = challenges.findByIdAndStatus(challengeId, MatchStatus.WAITING)
@@ -125,6 +138,7 @@ public class ChallengeService {
                 challenge.settlementVersion() + 1));
     }
 
+    /** Devuelve el estado del reto para uno de sus participantes. */
     @Transactional
     public ChallengeView myMatch(String playerId, String challengeId) {
         Challenge challenge = requireParticipant(playerId, challengeId);
@@ -141,6 +155,7 @@ public class ChallengeService {
                 .forEach(challenge -> challenges.save(challenge.cancel(now)));
     }
 
+    /** Registra la elección de cara o sello y actualiza la ronda. */
     @Transactional
     public ChallengeView chooseCoinSide(String playerId, String challengeId, String side) {
         Challenge challenge = requireActive(playerId, challengeId, GameType.COIN);
@@ -155,6 +170,7 @@ public class ChallengeService {
         return view(challenge, playerId);
     }
 
+    /** Guarda el avance del rompecabezas y calcula el resultado de ronda. */
     @Transactional
     public ChallengeView submitPuzzle(String playerId, String challengeId, PuzzleSubmission submission) {
         Challenge challenge = requireActive(playerId, challengeId, GameType.PUZZLE);
@@ -171,6 +187,7 @@ public class ChallengeService {
         return view(challenge, playerId);
     }
 
+    /** Valida la respuesta y determina el resultado de la ronda. */
     @Transactional
     public WordAnswerResult submitWordAnswer(String playerId, String challengeId, WordSubmission submission) {
         Challenge challenge = requireActive(playerId, challengeId, GameType.WORD);
@@ -189,6 +206,7 @@ public class ChallengeService {
         return new WordAnswerResult(false, false, view(challenge, playerId));
     }
 
+    /** Revela la pista compartida de la ronda. */
     @Transactional
     public ChallengeView revealWordHint(String playerId, String challengeId) {
         Challenge challenge = requireActive(playerId, challengeId, GameType.WORD);
@@ -203,6 +221,7 @@ public class ChallengeService {
         return view(challenge, playerId);
     }
 
+    /** Registra que el jugador abandona la partida. */
     @Transactional
     public ChallengeView forfeit(String playerId, String challengeId) {
         Challenge challenge = requireParticipant(playerId, challengeId);
@@ -217,6 +236,7 @@ public class ChallengeService {
         return view(challenge, playerId);
     }
 
+    /** Verifica la participación y devuelve el reto solicitado. */
     public Challenge requireParticipant(String playerId, String challengeId) {
         Challenge challenge = challenges.findById(challengeId)
                 .orElseThrow(() -> new IllegalArgumentException("No se encontró la partida."));
@@ -224,6 +244,7 @@ public class ChallengeService {
         return challenge;
     }
 
+    /** Indica si existe un bloqueo entre los jugadores. */
     public boolean isBlocked(String firstPlayerId, String secondPlayerId) {
         return blocks.existsByBlockerIdAndBlockedId(firstPlayerId, secondPlayerId)
                 || blocks.existsByBlockerIdAndBlockedId(secondPlayerId, firstPlayerId);

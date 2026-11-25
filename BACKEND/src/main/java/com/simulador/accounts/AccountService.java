@@ -7,19 +7,24 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
+/** Gestiona cuentas, créditos diarios y tiempo de actividad. */
 @Service
 public class AccountService {
+    /** Define el valor público DAILY_LIMIT_SECONDS utilizado por el módulo. */
     public static final long DAILY_LIMIT_SECONDS = 90 * 60L;
     private static final long CYCLE_SECONDS = 24 * 60 * 60L;
     private static final long DAILY_CREDIT_GRANT = 4_000L;
     private static final long MAX_PRESENCE_GAP_SECONDS = 15L;
+    /** Tipo público DailyReward del módulo. */
     public record DailyReward(PlayerAccount player, long creditsAwarded) {}
     private final PlayerRepository players;
 
+    /** Inicializa AccountService con las dependencias necesarias. */
     public AccountService(PlayerRepository players) {
         this.players = players;
     }
 
+    /** Busca la cuenta y actualiza sus datos temporales. */
     @Transactional
     public PlayerAccount refreshed(String playerId, Instant now) {
         PlayerAccount player = players.findById(playerId)
@@ -28,6 +33,7 @@ public class AccountService {
     }
 
     // Actualiza el ciclo diario y el tiempo de actividad acumulado.
+    /** Realiza la operación pública refresh. */
     public PlayerAccount refresh(PlayerAccount player, Instant now) {
         long elapsedSeconds = Math.max(0, Duration.between(player.cycleStartedAt(), now).getSeconds());
         long cycle = elapsedSeconds / CYCLE_SECONDS;
@@ -56,6 +62,7 @@ public class AccountService {
 
     @Transactional
     // Entrega créditos al volver, una vez por cada ciclo de 24 horas.
+    /** Entrega el bono diario al entrar cuando corresponde. */
     public DailyReward claimDailyRewardOnEntry(String playerId, Instant now) {
         PlayerAccount stored = players.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("La cuenta del jugador no existe."));
@@ -71,6 +78,7 @@ public class AccountService {
 
     @Transactional
     // Acumula la presencia activa y limita los intervalos de inactividad.
+    /** Registra la presencia del jugador y su tiempo activo. */
     public PlayerAccount recordPresence(String playerId, Instant now) {
         PlayerAccount stored = players.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("La cuenta del jugador no existe."));
@@ -86,18 +94,22 @@ public class AccountService {
         return players.save(refreshed.withPresence(now, refreshed.playPeriodStartedAt(), activeSeconds));
     }
 
+    /** Busca una cuenta por su correo electrónico. */
     public Optional<PlayerAccount> findByEmail(String email) {
         return players.findByEmailIgnoreCase(email.trim().toLowerCase());
     }
 
+    /** Devuelve el repositorio de cuentas usado por este servicio. */
     public PlayerRepository repository() {
         return players;
     }
 
+    /** Comprueba si el jugador puede iniciar una partida. */
     public void requireEligibleToStart(PlayerAccount player) {
         requireEligibleToStart(player, Instant.now());
     }
 
+    /** Comprueba si el jugador puede iniciar una partida. */
     public void requireEligibleToStart(PlayerAccount player, Instant now) {
         if (player.activeMatchId() != null) {
             throw new IllegalStateException("Ya tienes una partida activa.");
@@ -110,6 +122,7 @@ public class AccountService {
         }
     }
 
+    /** Registra el fin del periodo de descanso. */
     @Transactional
     public PlayerAccount completeRest(String playerId, Instant now) {
         PlayerAccount player = refreshed(playerId, now);
@@ -117,6 +130,7 @@ public class AccountService {
         return players.save(player.withRestUntil(null));
     }
 
+    /** Calcula el tiempo activo acumulado del jugador. */
     public long currentActiveSeconds(PlayerAccount player, Instant now) {
         if (player.activeMatchId() == null || player.activeMatchCheckpoint() == null) {
             return player.activePlaySeconds();

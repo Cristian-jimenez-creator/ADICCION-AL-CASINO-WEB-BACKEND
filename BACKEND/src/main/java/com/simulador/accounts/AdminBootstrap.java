@@ -8,6 +8,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 
+/** Prepara la cuenta administrativa inicial cuando está configurada. */
 @Configuration
 public class AdminBootstrap {
     @Bean

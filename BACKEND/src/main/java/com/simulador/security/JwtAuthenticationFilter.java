@@ -13,10 +13,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+/** Valida el token JWT de cada solicitud protegida. */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenService tokens;
 
+    /** Inicializa JwtAuthenticationFilter con las dependencias necesarias. */
     public JwtAuthenticationFilter(JwtTokenService tokens) {
         this.tokens = tokens;
     }

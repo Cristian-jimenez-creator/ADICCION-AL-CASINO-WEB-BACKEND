@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 import java.util.Optional;
 
+/** Acceso de persistencia a los retos. */
 public interface ChallengeRepository extends MongoRepository<Challenge, String> {
     List<Challenge> findByStatusOrderByCreatedAtAsc(MatchStatus status);
     List<Challenge> findByStatusOrderByCreatedAtDesc(MatchStatus status);

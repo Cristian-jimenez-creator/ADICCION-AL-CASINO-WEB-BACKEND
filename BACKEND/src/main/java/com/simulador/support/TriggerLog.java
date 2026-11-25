@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
+/** Registro persistido de una situación desencadenante. */
 @Document("trigger_logs")
 public record TriggerLog(
         @Id String id,

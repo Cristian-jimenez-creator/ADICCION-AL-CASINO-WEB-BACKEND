@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
+/** Mensaje de chat persistido para una partida. */
 @Document("challenge_messages")
 public record ChallengeChatMessage(
         @Id String id,

@@ -11,14 +11,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+/** Carga y selecciona el contenido de rompecabezas y palabras. */
 @Component
 public class ContentCatalog {
     private final Path directory;
 
+    /** Inicializa ContentCatalog con las dependencias necesarias. */
     public ContentCatalog(@Value("${app.game-content-dir:./game-content}") String directory) {
         this.directory = Path.of(directory);
     }
 
+    /** Devuelve el contenido de rompecabezas disponible. */
     public List<PuzzleContent> puzzles() {
         return readLines("puzzles.tsv").stream().map(line -> {
             String[] fields = line.split("\\t", -1);
@@ -36,6 +39,7 @@ public class ContentCatalog {
         }).toList();
     }
 
+    /** Devuelve las rondas de palabras disponibles. */
     public List<WordContent> wordPrompts() {
         return readLines("word-prompts.tsv").stream().map(line -> {
             String[] fields = line.split("\\t", 4);
@@ -48,12 +52,14 @@ public class ContentCatalog {
         }).toList();
     }
 
+    /** Selecciona un rompecabezas para una nueva partida. */
     public PuzzleContent choosePuzzle() {
         List<PuzzleContent> values = puzzles();
         if (values.isEmpty()) throw new IllegalStateException("El banco de rompecabezas aún no está configurado.");
         return values.get(ThreadLocalRandom.current().nextInt(values.size()));
     }
 
+    /** Selecciona una ronda de palabras para una nueva partida. */
     public WordContent chooseWordPrompt() {
         List<WordContent> values = wordPrompts();
         if (values.isEmpty()) throw new IllegalStateException("El banco de palabras y acertijos aún no está configurado.");
